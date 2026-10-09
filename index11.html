@@ -1,0 +1,839 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Поле чудес · English</title>
+<style>
+  :root{
+    --gold:#f5c542; --gold2:#b8860b; --bg:#0a1030; --bg2:#141b4d;
+    --cell:#e9e4d0; --red:#d7263d; --green:#2fbf71; --purple:#8b5cf6;
+    font-size:16px;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  html,body{height:100%;}
+  body{
+    font-family:"Segoe UI", Verdana, Arial, sans-serif;
+    background:radial-gradient(ellipse at 50% -10%, #26327a 0%, var(--bg) 55%, #05081c 100%);
+    color:#fff; min-height:100vh; overflow-x:hidden;
+  }
+  /* звёздное небо */
+  .stars{position:fixed; inset:0; pointer-events:none; z-index:0;}
+  .star{position:absolute; background:#fff; border-radius:50%; opacity:.7; animation:tw 3s infinite alternate;}
+  @keyframes tw{from{opacity:.15}to{opacity:.85}}
+  .wrap{position:relative; z-index:1; max-width:1180px; margin:0 auto; padding:18px 16px 40px;}
+
+  /* ---------- Шапка ---------- */
+  .logo{
+    text-align:center; margin:6px 0 18px; user-select:none;
+  }
+  .logo h1{
+    font-family:"Georgia","Times New Roman",serif;
+    font-size:clamp(28px,5vw,52px); letter-spacing:.06em;
+    background:linear-gradient(180deg,#fff3b0 0%, var(--gold) 45%, #a86f00 100%);
+    -webkit-background-clip:text; background-clip:text; color:transparent;
+    text-shadow:0 0 26px rgba(245,197,66,.35);
+  }
+  .logo .sub{color:#9fb0ff; letter-spacing:.35em; font-size:12px; text-transform:uppercase; margin-top:4px;}
+
+  /* ---------- Общие панели ---------- */
+  .panel{
+    background:linear-gradient(180deg, var(--bg2), #0d1338);
+    border:1px solid #2c3d8f; border-radius:14px;
+    box-shadow:0 10px 30px rgba(0,0,0,.45), inset 0 1px 0 rgba(255,255,255,.06);
+  }
+
+  /* ---------- Экран настроек ---------- */
+  .setup{max-width:760px; margin:30px auto; padding:28px 30px;}
+  .setup h2{color:var(--gold); margin-bottom:16px; font-size:22px;}
+  .setup .lead{color:#c6d0ff; margin-bottom:22px; line-height:1.5;}
+  .field{margin-bottom:20px;}
+  .field>label{display:block; color:#8fa2ff; font-size:13px; text-transform:uppercase; letter-spacing:.08em; margin-bottom:8px;}
+  .players .pl{display:flex; gap:10px; align-items:center; margin-bottom:8px;}
+  .players input[type=text]{
+    flex:1; padding:10px 12px; border-radius:8px; border:1px solid #34449c;
+    background:#0a0f33; color:#fff; font-size:15px;
+  }
+  .players input[type=text]:disabled{opacity:.35;}
+  .pl .dot{width:30px;height:30px;border-radius:50%;display:grid;place-items:center;font-weight:700;color:#081028;}
+  .btn{
+    cursor:pointer; border:none; border-radius:10px; font-size:15px; font-weight:700;
+    padding:10px 18px; color:#1c1600;
+    background:linear-gradient(180deg,#ffe08a, var(--gold) 55%, #c98f00);
+    box-shadow:0 4px 14px rgba(245,197,66,.35), inset 0 1px 0 #fff7;
+    transition:transform .12s, filter .12s;
+  }
+  .btn:hover{transform:translateY(-1px); filter:brightness(1.08);}
+  .btn:active{transform:translateY(1px);}
+  .btn:disabled{cursor:not-allowed; filter:grayscale(.8) brightness(.7); transform:none; box-shadow:none;}
+  .btn.ghost{background:linear-gradient(180deg,#2a377f,#1b2560); color:#dfe6ff; box-shadow:inset 0 1px 0 #ffffff22; border:1px solid #3b4bb0;}
+  .btn.small{padding:6px 12px; font-size:13px;}
+  .chips{display:flex; flex-wrap:wrap; gap:8px;}
+  .chip{
+    cursor:pointer; padding:8px 14px; border-radius:999px; font-size:14px;
+    background:#131b52; border:1px solid #3b4bb0; color:#c9d4ff; user-select:none;
+    transition:all .15s;
+  }
+  .chip:hover{border-color:var(--gold);}
+  .chip.on{background:linear-gradient(180deg,#ffe08a,#e2ab12); color:#221a00; border-color:#ffe08a; font-weight:700;}
+  .rounds{display:flex; gap:8px;}
+
+  /* ---------- Игровой экран ---------- */
+  .game{display:none;}
+  .grid{display:grid; grid-template-columns: 300px 1fr; gap:18px; align-items:start;}
+  @media(max-width:900px){.grid{grid-template-columns:1fr;}}
+
+  /* панель игроков */
+  .playersPane{padding:16px;}
+  .playersPane h3, .wheelPane h3{font-size:12px; letter-spacing:.14em; text-transform:uppercase; color:#8fa2ff; margin-bottom:10px;}
+  .pcard{
+    border:1px solid #2c3d8f; border-radius:10px; padding:10px 12px; margin-bottom:8px;
+    background:#0a0f33; display:flex; align-items:center; gap:10px; position:relative; overflow:hidden;
+  }
+  .pcard .pdot{width:26px;height:26px;border-radius:50%;display:grid;place-items:center;font-weight:800;color:#081028; flex:none;}
+  .pcard .pname{flex:1; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+  .pcard .pscore{font-size:20px; font-weight:800; color:var(--gold); font-variant-numeric:tabular-nums;}
+  .pcard .pround{font-size:11px; color:#9fb0ff;}
+  .pcard.turn{border-color:var(--gold); box-shadow:0 0 18px rgba(245,197,66,.35); animation:pulse 1.6s infinite;}
+  .pcard.out{opacity:.45;}
+  @keyframes pulse{0%,100%{box-shadow:0 0 10px rgba(245,197,66,.25)}50%{box-shadow:0 0 24px rgba(245,197,66,.55)}}
+  .prizeList{font-size:12.5px; color:#ffd97a; line-height:1.55; margin-top:6px;}
+
+  .wheelPane{padding:16px; text-align:center;}
+  #wheelBox{position:relative; width:268px; height:268px; margin:0 auto;}
+  #wheel{width:100%; height:100%; display:block; filter:drop-shadow(0 8px 22px rgba(0,0,0,.5));}
+  .pointer{
+    position:absolute; top:-6px; left:50%; transform:translateX(-50%);
+    width:0;height:0; border:14px solid transparent; border-top:26px solid var(--gold);
+    filter:drop-shadow(0 2px 4px #000); z-index:2;
+  }
+  #spinBtn{margin-top:14px; width:100%; font-size:18px; padding:14px;}
+  #sectorInfo{margin-top:10px; min-height:24px; font-weight:700; color:var(--gold);}
+
+  /* центральное поле */
+  .centerPane{display:flex; flex-direction:column; gap:16px;}
+  .qPane{padding:18px 20px;}
+  .qTheme{color:var(--gold); font-weight:700; letter-spacing:.05em; margin-bottom:6px; font-size:15px;}
+  .qText{font-size:clamp(16px,2.2vw,21px); line-height:1.45;}
+  .qText .en{display:block; color:#aab6f2; font-style:italic; font-size:.78em; margin-top:6px;}
+
+  /* табло */
+  .boardPane{padding:22px 16px 18px; display:flex; flex-direction:column; align-items:center; gap:14px;}
+  .boardRow{display:flex; flex-wrap:wrap; justify-content:center; gap:8px;}
+  .cell{
+    width:clamp(40px,5.4vw,58px); height:clamp(52px,7vw,72px);
+    background:linear-gradient(180deg,#2b3fa0,#1b2a78);
+    border:2px solid #4a5fd0; border-radius:8px;
+    display:grid; place-items:center;
+    font-size:clamp(24px,3.6vw,38px); font-weight:900; font-family:"Arial Black",Arial,sans-serif;
+    color:#fff; box-shadow:inset 0 -6px 12px #0006, 0 4px 10px #0006;
+    transition:transform .2s;
+    position:relative;
+  }
+  .cell.open{
+    background:linear-gradient(180deg,#fffdf2,#e6dfc2); color:#101430;
+    border-color:#fff3b0; animation:flip .45s ease;
+    box-shadow:0 0 22px rgba(255,240,160,.55), inset 0 -4px 8px #0003;
+  }
+  @keyframes flip{0%{transform:rotateX(90deg) scale(.8)}100%{transform:rotateX(0) scale(1)}}
+  .cell.hint{outline:3px dashed var(--green); outline-offset:2px;}
+
+  /* алфавит */
+  .abc{display:flex; flex-wrap:wrap; justify-content:center; gap:6px; max-width:640px;}
+  .key{
+    width:38px; height:42px; border-radius:8px; border:1px solid #3b4bb0;
+    background:#141c58; color:#dfe6ff; font-weight:800; font-size:17px; cursor:pointer;
+    display:grid; place-items:center; transition:all .12s; user-select:none;
+  }
+  .key:hover:not(:disabled){background:#22308a; transform:translateY(-2px);}
+  .key:disabled{cursor:default;}
+  .key.used{background:#0a0f33; color:#3a447f; border-color:#222d6e; transform:none;}
+  .key.hit{background:linear-gradient(180deg,#7dffb8,#18a85c); color:#04250f; border-color:#7dffb8;}
+  .key.miss{background:linear-gradient(180deg,#ff8f9e,#a11227); color:#fff; border-color:#ff8f9e;}
+  .key.picking{outline:3px dashed var(--gold); outline-offset:2px; animation:pulse 1.2s infinite;}
+
+  /* строка состояния */
+  .statusPane{padding:12px 18px; display:flex; align-items:center; gap:14px; flex-wrap:wrap;}
+  .turnBanner{font-size:17px; font-weight:800;}
+  .turnBanner b{color:var(--gold);}
+  .logMsg{color:#aab6f2; font-size:14px; flex:1; min-width:200px;}
+  .actions{display:flex; gap:8px; flex-wrap:wrap;}
+
+  /* ---------- Модалки ---------- */
+  .overlay{
+    position:fixed; inset:0; background:#04071ccc; backdrop-filter:blur(3px);
+    display:none; place-items:center; z-index:50; padding:16px;
+  }
+  .overlay.show{display:grid;}
+  .modal{
+    max-width:560px; width:100%; padding:28px 30px; text-align:center;
+    animation:up .25s ease;
+  }
+  @keyframes up{from{transform:translateY(18px); opacity:0}to{transform:none; opacity:1}}
+  .modal h3{color:var(--gold); font-size:24px; margin-bottom:14px;}
+  .modal p{color:#dfe6ff; line-height:1.5; margin-bottom:8px;}
+  .modal input[type=text]{
+    width:100%; padding:12px 14px; font-size:22px; text-align:center; letter-spacing:.12em;
+    text-transform:uppercase; border-radius:10px; border:1px solid #3b4bb0; background:#0a0f33; color:#fff;
+  }
+  .modal .row{display:flex; gap:10px; justify-content:center; margin-top:18px; flex-wrap:wrap;}
+  .bigword{font-size:clamp(26px,4vw,40px); font-weight:900; letter-spacing:.14em; color:#fff3b0; margin:10px 0; font-family:"Arial Black",Arial,sans-serif;}
+  .prizeEmoji{font-size:56px; margin-bottom:6px;}
+
+  .finalTable{width:100%; border-collapse:collapse; margin:14px 0;}
+  .finalTable td,.finalTable th{padding:9px 12px; border-bottom:1px solid #2c3d8f; text-align:center;}
+  .finalTable th{color:#8fa2ff; font-size:12px; text-transform:uppercase; letter-spacing:.1em;}
+  .finalTable .w{color:var(--gold); font-weight:800;}
+  .confetti{position:fixed; top:-20px; z-index:60; pointer-events:none; font-size:22px; animation:fall linear forwards;}
+  @keyframes fall{to{transform:translateY(110vh) rotate(720deg);}}
+
+  .footerNote{text-align:center; color:#5d6bb8; font-size:12px; margin-top:26px; letter-spacing:.06em;}
+  .rulesList{text-align:left; color:#dfe6ff; line-height:1.7; font-size:15px;}
+  .rulesList b{color:var(--gold);}
+</style>
+</head>
+<body>
+<div class="stars" id="stars"></div>
+
+<div class="wrap">
+  <div class="logo">
+    <h1>ПОЛЕ ЧУДЕС</h1>
+    <div class="sub">English edition · угадай английское слово</div>
+  </div>
+
+  <!-- ============ НАСТРОЙКИ ============ -->
+  <div class="panel setup" id="setupScreen">
+    <h2>Настройки игры</h2>
+    <p class="lead">Ведущий задаёт вопрос — игроки по очереди крутят барабан и называют буквы.
+    Каждая открытая буква приносит очки. Угадал слово — забираешь раунд!</p>
+
+    <div class="field">
+      <label>Игроки (1–3)</label>
+      <div class="players" id="playersSetup"></div>
+      <div style="display:flex; gap:8px; margin-top:10px;">
+        <button class="btn ghost small" id="btnAddPlayer">+ игрок</button>
+        <button class="btn ghost small" id="btnRemovePlayer">− игрок</button>
+      </div>
+    </div>
+
+    <div class="field">
+      <label>Тема</label>
+      <div class="chips" id="themeChips"></div>
+    </div>
+
+    <div class="field">
+      <label>Слов в игре</label>
+      <div class="chips rounds" id="roundChips"></div>
+    </div>
+
+    <div style="display:flex; gap:10px; flex-wrap:wrap; margin-top:26px;">
+      <button class="btn" id="btnStart" style="font-size:18px; padding:14px 34px;">▶ Начать игру</button>
+      <button class="btn ghost" id="btnRules">Правила</button>
+    </div>
+  </div>
+
+  <!-- ============ ИГРА ============ -->
+  <div class="game" id="gameScreen">
+    <div class="grid">
+      <!-- барабан -->
+      <div class="panel wheelPane">
+        <h3>Барабан</h3>
+        <div id="wheelBox">
+          <div class="pointer"></div>
+          <canvas id="wheel" width="560" height="560"></canvas>
+        </div>
+        <div id="sectorInfo">Крутите барабан!</div>
+        <button class="btn" id="spinBtn">🎡 Крутить барабан</button>
+      </div>
+
+      <div class="centerPane">
+        <!-- игроки -->
+        <div class="panel playersPane">
+          <h3>Игроки</h3>
+          <div id="playersBar"></div>
+        </div>
+
+        <!-- вопрос -->
+        <div class="panel qPane">
+          <div class="qTheme" id="qTheme"></div>
+          <div class="qText"><span id="qRu"></span><span class="en" id="qEn"></span></div>
+        </div>
+
+        <!-- табло -->
+        <div class="panel boardPane">
+          <div class="boardRow" id="board"></div>
+          <div class="abc" id="abc"></div>
+        </div>
+
+        <!-- статус -->
+        <div class="panel statusPane">
+          <div class="turnBanner" id="turnBanner"></div>
+          <div class="logMsg" id="logMsg"></div>
+          <div class="actions">
+            <button class="btn ghost small" id="btnSayWord">Сказать слово</button>
+            <button class="btn ghost small" id="btnSkip">Пропустить слово</button>
+            <button class="btn ghost small" id="btnSound">🔊 Звук</button>
+            <button class="btn ghost small" id="btnQuit">Завершить</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="footerNote">Поле чудес · English edition — игра для класса по английским словам</div>
+  </div>
+</div>
+
+<!-- ============ МОДАЛКИ ============ -->
+<div class="overlay" id="ovWord">
+  <div class="panel modal">
+    <h3>Назвать слово</h3>
+    <p id="sayWho" style="color:#8fa2ff"></p>
+    <input type="text" id="sayInput" maxlength="30" autocomplete="off" placeholder="ВВЕДИТЕ СЛОВО">
+    <div class="row">
+      <button class="btn" id="sayOk">Ответить</button>
+      <button class="btn ghost" id="sayCancel">Отмена</button>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="ovPrize">
+  <div class="panel modal">
+    <div class="prizeEmoji" id="prizeEmoji">🎁</div>
+    <h3>Приз!</h3>
+    <p id="prizeText" style="font-size:18px"></p>
+    <div class="row">
+      <button class="btn" id="prizeTake">Забрать приз</button>
+      <button class="btn ghost" id="prizeContinue">Крутить дальше</button>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="ovRound">
+  <div class="panel modal">
+    <h3 id="roundTitle">Слово угадано!</h3>
+    <div class="bigword" id="roundWord"></div>
+    <p id="roundInfo"></p>
+    <div class="row"><button class="btn" id="roundNext">Следующее слово ▶</button></div>
+  </div>
+</div>
+
+<div class="overlay" id="ovFinal">
+  <div class="panel modal">
+    <h3 id="finalTitle">Игра окончена!</h3>
+    <table class="finalTable" id="finalTable"></table>
+    <div class="row">
+      <button class="btn" id="finalAgain">Играть ещё</button>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="ovRules">
+  <div class="panel modal">
+    <h3>Правила</h3>
+    <div class="rulesList">
+      <b>Очки</b> — назвали букву, которая есть в слове: очки сектора × сколько раз буква встречается.<br>
+      <b style="color:#d7263d">БАНКРОТ</b> — очки за текущий раунд сгорают, ход переходит дальше.<br>
+      <b style="color:#9fb0ff">0</b> — ход переходит к следующему игроку.<br>
+      <b style="color:#8b5cf6">×2</b> — очки раунда удваиваются, вы продолжаете.<br>
+      <b style="color:#2fbf71">+</b> — можно бесплатно открыть любую букву (без очков).<br>
+      <b style="color:#f5c542">ПРИЗ</b> — заберите приз или крутите дальше.<br>
+      <b>Сказать слово</b> — можно назвать слово целиком. Ошиблись — ход переходит.<br>
+      Победа в раунде — очки раунда уходят в общий зачёт.
+    </div>
+    <div class="row"><button class="btn" id="rulesOk">Понятно!</button></div>
+  </div>
+</div>
+
+<script>
+"use strict";
+/* ================= ДАННЫЕ (собраны с фото в папке «инглиш») ================= */
+const CATEGORIES = [
+  { name:"✈️ Путешествия", items:[
+    {t:"Виды транспорта", qEn:"What long-distance transport travels on tracks?", qRu:"Какой транспорт дальнего следования ездит по рельсам?", w:"TRAIN", ru:"поезд"},
+    {t:"Жильё для отпуска", qEn:"A budget place where travelers stay overnight, usually with shared rooms.", qRu:"Дешёвое место для ночлега путешественников, обычно с общими комнатами.", w:"HOSTEL", ru:"хостел"},
+    {t:"Всё необходимое в аэропорту", qEn:"Bags and suitcases that you take with you when traveling.", qRu:"Сумки и чемоданы, которые вы берёте с собой в поездку.", w:"LUGGAGE", ru:"багаж"},
+    {t:"Городские достопримечательности", qEn:"A tall famous structure in Paris.", qRu:"Знаменитая высокая башня в Париже.", w:"TOWER", ru:"башня"},
+    {t:"Снаряжение для путешествий", qEn:"A portable light carried in the hand.", qRu:"Переносной источник света, который носят в руке.", w:"LANTERN", ru:"фонарь"},
+    {t:"Снаряжение для путешествий", qEn:"A rectangular bag with a handle, used for carrying clothes when traveling.", qRu:"Прямоугольная сумка с ручкой для перевозки одежды в поездках.", w:"SUITCASE", ru:"чемодан"},
+  ]},
+  { name:"🍽 Еда и кулинария", items:[
+    {t:"Способы приготовления", qEn:"To cook food in hot oil or fat in a pan.", qRu:"Готовить еду в горячем масле на сковороде.", w:"FRY", ru:"жарить"},
+    {t:"Способы приготовления", qEn:"To cook something in very hot water until it bubbles.", qRu:"Варить в очень горячей воде до кипения.", w:"BOIL", ru:"варить"},
+    {t:"Способы приготовления", qEn:"To cook food on a metal frame over fire or hot coals.", qRu:"Готовить на металлической решётке над огнём или углями.", w:"GRILL", ru:"жарить на гриле"},
+    {t:"Отделы супермаркета", qEn:"The place in a store where you pay for your shopping.", qRu:"Место в магазине, где вы оплачиваете покупки.", w:"CHECKOUT", ru:"касса"},
+    {t:"Напитки", qEn:"A hot drink made from roasted beans.", qRu:"Горячий напиток из обжаренных зёрен.", w:"COFFEE", ru:"кофе"},
+    {t:"Напитки", qEn:"A sweet drink made from lemons, sugar and water.", qRu:"Сладкий напиток из лимонов, сахара и воды.", w:"LEMONADE", ru:"лимонад"},
+    {t:"Домашняя техника", qEn:"A machine that washes dirty plates, cups and cutlery automatically.", qRu:"Машина, автоматически моющая грязную посуду.", w:"DISHWASHER", ru:"посудомоечная машина"},
+    {t:"Покупки", qEn:"A reduction in the usual price of something.", qRu:"Снижение обычной цены товара.", w:"DISCOUNT", ru:"скидка"},
+  ]},
+  { name:"🐘 Животные", items:[
+    {t:"Животные", qEn:"A very large animal with a long trunk.", qRu:"Очень большое животное с длинным хоботом.", w:"ELEPHANT", ru:"слон"},
+    {t:"Животные", qEn:"A large wild cat, known as the king of animals.", qRu:"Большая дикая кошка, известная как король животных.", w:"LION", ru:"лев"},
+    {t:"Морские обитатели", qEn:"The largest animal that has ever lived on Earth.", qRu:"Самое большое животное, которое когда-либо жило на Земле.", w:"BLUE WHALE", ru:"синий кит"},
+    {t:"Морские обитатели", qEn:"A very intelligent sea animal.", qRu:"Очень умное морское животное.", w:"DOLPHIN", ru:"дельфин"},
+  ]},
+  { name:"🌿 Природа", items:[
+    {t:"Экология", qEn:"Processing used materials to make new products.", qRu:"Переработка использованных материалов для создания новых продуктов.", w:"RECYCLING", ru:"переработка отходов"},
+    {t:"Географические объекты", qEn:"A very dry, hot area of land with little rain.", qRu:"Очень сухая жаркая местность с малым количеством осадков.", w:"DESERT", ru:"пустыня"},
+    {t:"Географические объекты", qEn:"A mass of ice moving slowly down a mountain valley.", qRu:"Масса льда, медленно движущаяся вниз по горной долине.", w:"GLACIER", ru:"ледник"},
+    {t:"Погода", qEn:"Water falling from clouds in small drops.", qRu:"Вода, падающая из облаков мелкими каплями.", w:"RAIN", ru:"дождь"},
+    {t:"Погода", qEn:"White flakes falling from the sky in winter.", qRu:"Белые хлопья, падающие с неба зимой.", w:"SNOW", ru:"снег"},
+  ]},
+  { name:"⚽ Спорт", items:[
+    {t:"Зимние виды спорта", qEn:"A sport where you glide over snow with long, thin skis.", qRu:"Вид спорта: скольжение по снегу на длинных тонких лыжах.", w:"SKIING", ru:"лыжный спорт"},
+    {t:"Зимние виды спорта", qEn:"A sport where you glide over an icy surface using skates.", qRu:"Скольжение по ледяной поверхности на коньках.", w:"SKATING", ru:"катание на коньках"},
+    {t:"Спортивный инвентарь", qEn:"You use it to hit a tennis ball.", qRu:"Ею ударяют по теннисному мячу.", w:"RACKET", ru:"ракетка"},
+    {t:"Спортивный инвентарь", qEn:"In this game two teams hit a ball over a high net.", qRu:"В этой игре две команды перебрасывают мяч через высокую сетку.", w:"VOLLEYBALL", ru:"волейбол"},
+  ]},
+  { name:"👩‍🏫 Люди и профессии", items:[
+    {t:"Профессии", qEn:"A person who teaches at school.", qRu:"Человек, который учит в школе.", w:"TEACHER", ru:"учитель"},
+    {t:"Профессии", qEn:"A person who treats sick animals.", qRu:"Человек, который лечит больных животных.", w:"VET", ru:"ветеринар"},
+    {t:"Эмоции и настроения", qEn:"Feeling unhappy because someone else has something that you want.", qRu:"Чувство недовольства, когда у другого есть то, что хочется вам.", w:"JEALOUS", ru:"завистливый"},
+    {t:"Отношения", qEn:"A person who lives next door or very close to you.", qRu:"Человек, который живёт по соседству или очень близко к вам.", w:"NEIGHBOUR", ru:"сосед"},
+    {t:"Школьные предметы", qEn:"The school subject that studies past events.", qRu:"Школьный предмет, изучающий прошлые события.", w:"HISTORY", ru:"история"},
+  ]},
+  { name:"🩺 Тело и здоровье", items:[
+    {t:"Части тела", qEn:"You use them to see.", qRu:"Вы используете их, чтобы видеть.", w:"EYES", ru:"глаза"},
+    {t:"Части тела", qEn:"You use them to carry heavy things.", qRu:"Вы используете их, чтобы носить тяжёлые вещи.", w:"SHOULDERS", ru:"плечи"},
+    {t:"Части тела", qEn:"The joint between your arm and your forearm.", qRu:"Сустав между плечом и предплечьем.", w:"ELBOW", ru:"локоть"},
+    {t:"Проблемы со здоровьем", qEn:"A painful feeling in your head.", qRu:"Болезненное ощущение в голове.", w:"HEADACHE", ru:"головная боль"},
+    {t:"В аптеке", qEn:"A strip of material used to tie around a wound.", qRu:"Полоса материала для перевязки раны.", w:"BANDAGE", ru:"бинт"},
+    {t:"Инструменты", qEn:"You use it to cut wood.", qRu:"Этим пилят дерево.", w:"SAW", ru:"пила"},
+    {t:"Инструменты", qEn:"You use it to hit nails.", qRu:"Этим забивают гвозди.", w:"HAMMER", ru:"молоток"},
+  ]},
+  { name:"🚀 Космос", items:[
+    {t:"Космос и планеты", qEn:"A large piece of rock that orbits the Sun, smaller than a planet.", qRu:"Большой камень, вращающийся вокруг Солнца, меньше планеты.", w:"ASTEROID", ru:"астероид"},
+    {t:"Космос и планеты", qEn:"The force that pulls objects toward the Earth.", qRu:"Сила, притягивающая объекты к Земле.", w:"GRAVITY", ru:"гравитация"},
+  ]},
+];
+const PRIZES = [
+  ["🖊","Ручка"],["✏️","Карандаш"],["🧽","Ластик"],
+  ["📓","Тетрадь"],["📏","Линейка"],["🧃","Пакетик сока"],["🍭","Леденец на палочке"],
+];
+
+/* ================= БАРАБАН ================= */
+const SECTORS = [
+  {label:"200", type:"pts", v:200, color:"#1d2a6b"},
+  {label:"БАНКРОТ", type:"bank", v:0, color:"#8f1530"},
+  {label:"450", type:"pts", v:450, color:"#1d2a6b"},
+  {label:"ПРИЗ", type:"prize", v:0, color:"#a86f00"},
+  {label:"100", type:"pts", v:100, color:"#16206a"},
+  {label:"×2", type:"x2", v:0, color:"#5b3fb8"},
+  {label:"600", type:"pts", v:600, color:"#1d2a6b"},
+  {label:"0", type:"zero", v:0, color:"#39415e"},
+  {label:"350", type:"pts", v:350, color:"#16206a"},
+  {label:"ПЛЮС", type:"plus", v:0, color:"#127a4d"},
+  {label:"750", type:"pts", v:750, color:"#1d2a6b"},
+  {label:"150", type:"pts", v:150, color:"#16206a"},
+  {label:"900", type:"pts", v:900, color:"#2b1668"},
+  {label:"0", type:"zero", v:0, color:"#39415e"},
+  {label:"300", type:"pts", v:300, color:"#1d2a6b"},
+  {label:"ПРИЗ", type:"prize", v:0, color:"#a86f00"},
+  {label:"500", type:"pts", v:500, color:"#16206a"},
+  {label:"БАНКРОТ", type:"bank", v:0, color:"#8f1530"},
+  {label:"250", type:"pts", v:250, color:"#1d2a6b"},
+  {label:"800", type:"pts", v:800, color:"#2b1668"},
+];
+const PLAYER_COLORS = ["#f5c542","#5ad0ff","#ff8f9e"];
+
+/* ================= СОСТОЯНИЕ ================= */
+const S = {
+  players:[], turn:0, queue:[], round:0,
+  cur:null, opened:new Set(), usedLetters:new Set(),
+  phase:"idle", // idle | spinning | letter | plus | wait | roundEnd | over
+  angle:0, spinning:false, sound:true, lastPts:0,
+  theme:"*", rounds:8,
+};
+
+/* ================= УТИЛИТЫ ================= */
+const $ = id => document.getElementById(id);
+const shuffle = a => { a=a.slice(); for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];} return a; };
+const norm = s => s.toUpperCase().replace(/[^A-Z]/g,"");
+
+/* ================= ЗВУК ================= */
+let AC=null;
+function ac(){ if(!AC) AC = new (window.AudioContext||window.webkitAudioContext)(); return AC; }
+function beep(freq, dur=0.08, type="square", vol=0.06, when=0){
+  if(!S.sound) return;
+  try{
+    const c=ac(), o=c.createOscillator(), g=c.createGain();
+    o.type=type; o.frequency.value=freq;
+    g.gain.setValueAtTime(vol, c.currentTime+when);
+    g.gain.exponentialRampToValueAtTime(0.0001, c.currentTime+when+dur);
+    o.connect(g).connect(c.destination);
+    o.start(c.currentTime+when); o.stop(c.currentTime+when+dur+0.02);
+  }catch(e){}
+}
+const sndTick  = ()=>beep(720,0.03,"square",0.03);
+const sndOpen  = ()=>{beep(660,0.09,"sine",0.09);beep(990,0.14,"sine",0.08,0.09);};
+const sndMiss  = ()=>beep(140,0.25,"sawtooth",0.06);
+const sndBank  = ()=>{[300,240,180,120].forEach((f,i)=>beep(f,0.14,"sawtooth",0.07,i*0.13));};
+const sndWin   = ()=>{[523,659,784,1047].forEach((f,i)=>beep(f,0.16,"triangle",0.09,i*0.12));};
+const sndFanf  = ()=>{[392,523,659,784,1047,784,1047].forEach((f,i)=>beep(f,0.18,"triangle",0.09,i*0.14));};
+
+/* ================= ЗВЁЗДЫ ================= */
+(function(){
+  const box=$("stars");
+  for(let i=0;i<70;i++){
+    const s=document.createElement("div"); s.className="star";
+    const sz=Math.random()*2.2+0.6;
+    s.style.cssText=`width:${sz}px;height:${sz}px;left:${Math.random()*100}%;top:${Math.random()*100}%;animation-delay:${Math.random()*3}s;`;
+    box.appendChild(s);
+  }
+})();
+
+/* ================= ЭКРАН НАСТРОЕК ================= */
+function buildSetup(){
+  const ps=$("playersSetup");
+  if(!ps.dataset.built){
+    ["Игрок 1","Игрок 2","Игрок 3"].forEach((n,i)=>{
+      const row=document.createElement("div"); row.className="pl";
+      row.innerHTML=`<div class="dot" style="background:${PLAYER_COLORS[i]}">${i+1}</div>
+        <input type="text" maxlength="14" value="${n}" ${i?"disabled":""}>`;
+      ps.appendChild(row);
+    });
+    ps.dataset.built=1;
+    $("btnAddPlayer").onclick=()=>{ const ins=[...ps.querySelectorAll("input")]; for(let i=1;i<3;i++){ if(ins[i].disabled){ins[i].disabled=false; ins[i].value="Игрок "+(i+1); break;} } syncSetupBtns(); };
+    $("btnRemovePlayer").onclick=()=>{ const ins=[...ps.querySelectorAll("input")]; for(let i=2;i>0;i--){ if(!ins[i].disabled){ins[i].disabled=true; ins[i].value="Игрок "+(i+1); break;} } syncSetupBtns(); };
+    const syncSetupBtns=()=>{ const n=[...ps.querySelectorAll("input")].filter(x=>!x.disabled).length; $("btnAddPlayer").disabled=n>=3; $("btnRemovePlayer").disabled=n<=1; };
+    syncSetupBtns();
+  }
+  // темы
+  const tc=$("themeChips");
+  if(!tc.dataset.built){
+    const mk=(label,val)=>{ const c=document.createElement("div"); c.className="chip"+(val===S.theme?" on":""); c.textContent=label;
+      c.onclick=()=>{ S.theme=val; [...tc.children].forEach(x=>x.classList.remove("on")); c.classList.add("on"); }; tc.appendChild(c); };
+    mk("🎲 Все темы","*");
+    CATEGORIES.forEach(cat=>mk(cat.name,cat.name));
+    tc.dataset.built=1;
+  }
+  const rc=$("roundChips");
+  if(!rc.dataset.built){
+    [4,6,8,12,999].forEach(n=>{ const c=document.createElement("div"); c.className="chip"+(n===S.rounds?" on":"");
+      c.textContent=n===999?"Все слова":n;
+      c.onclick=()=>{ S.rounds=n; [...rc.children].forEach(x=>x.classList.remove("on")); c.classList.add("on"); }; rc.appendChild(c); });
+    rc.dataset.built=1;
+  }
+  $("btnRules").onclick=()=>$("ovRules").classList.add("show");
+  $("rulesOk").onclick=()=>$("ovRules").classList.remove("show");
+  $("btnStart").onclick=startGame;
+  $("btnQuit").onclick=()=>{ if(confirm("Завершить игру и показать итоги?")) endGame(); };
+  $("btnSound").onclick=()=>{ S.sound=!S.sound; $("btnSound").textContent=S.sound?"🔊 Звук":"🔇 Звук"; };
+}
+/* ================= БАРАБАН (canvas) ================= */
+const wheel=$("wheel"), wctx=wheel.getContext("2d");
+let lampPhase=0;
+function drawWheel(){
+  const R=270, cx=280, cy=280, N=SECTORS.length, step=2*Math.PI/N;
+  wctx.clearRect(0,0,560,560);
+  for(let i=0;i<N;i++){
+    const a0=S.angle+i*step, a1=a0+step;
+    wctx.beginPath(); wctx.moveTo(cx,cy); wctx.arc(cx,cy,R,a0,a1); wctx.closePath();
+    const mid=(a0+a1)/2, light=0.5+0.5*Math.cos(mid);
+    wctx.fillStyle=shade(SECTORS[i].color, light*0.25);
+    wctx.fill(); wctx.strokeStyle="#0a0f33"; wctx.lineWidth=3; wctx.stroke();
+    // текст
+    wctx.save(); wctx.translate(cx,cy); wctx.rotate(mid);
+    wctx.textAlign="right"; wctx.textBaseline="middle";
+    const sec=SECTORS[i];
+    if(sec.type==="pts"){ wctx.fillStyle="#ffe9a3"; wctx.font="900 34px Arial"; wctx.fillText(sec.label, R-18, 0); }
+    else{
+      wctx.fillStyle="#fff"; wctx.font="900 21px Arial";
+      if(sec.label.length>4){ wctx.rotate(Math.PI/2); wctx.textAlign="center"; wctx.fillText(sec.label, 0, -R+78); }
+      else { wctx.fillText(sec.label, R-18, 0); }
+    }
+    wctx.restore();
+  }
+  // ступица
+  wctx.beginPath(); wctx.arc(cx,cy,52,0,7); 
+  const g=wctx.createRadialGradient(cx-14,cy-14,8,cx,cy,54);
+  g.addColorStop(0,"#fff3b0"); g.addColorStop(1,"#8a6a00");
+  wctx.fillStyle=g; wctx.fill();
+  wctx.lineWidth=6; wctx.strokeStyle="#f5c542"; wctx.stroke();
+  wctx.fillStyle="#3a2a00"; wctx.font="900 30px Arial"; wctx.textAlign="center"; wctx.textBaseline="middle";
+  wctx.fillText("🏁",cx,cy+2);
+  // лампочки по ободу
+  for(let i=0;i<28;i++){
+    const a=S.angle+i*Math.PI/14;
+    const x=cx+Math.cos(a)*(R+9), y=cy+Math.sin(a)*(R+9);
+    wctx.beginPath(); wctx.arc(x,y,5,0,7);
+    const on=((i+lampPhase)%4)<2;
+    wctx.fillStyle=on?"#ffe9a3":"#7a5b00"; wctx.fill();
+  }
+}
+function shade(hex,f){
+  const n=parseInt(hex.slice(1),16), r=n>>16&255, g=n>>8&255, b=n&255;
+  const t=x=>Math.round(Math.min(255,x+255*f*0.5));
+  return `rgb(${t(r)},${t(g)},${t(b)})`;
+}
+const TAU = Math.PI*2;
+function spinTo(idx, done){
+  const N=SECTORS.length, step=TAU/N;
+  // центр сектора idx должен оказаться под указателем (верхнее положение = -π/2)
+  const targetCenter = -Math.PI/2 - (idx+0.5)*step;
+  const turns = 5+Math.floor(Math.random()*3);
+  let delta = (targetCenter - S.angle) % TAU; if(delta<0) delta+=TAU;
+  delta += turns*TAU;
+  const start=S.angle, t0=performance.now(), dur=3800+Math.random()*800;
+  let lastSector=-1;
+  (function frame(now){
+    const p=Math.min(1,(now-t0)/dur);
+    const e=1-Math.pow(1-p,3.2);
+    S.angle=start+delta*e; drawWheel();
+    // тик по секторам
+    const a=((-Math.PI/2 - S.angle)%TAU+TAU)%TAU;
+    const cur=Math.floor(a/step);
+    if(cur!==lastSector){ lastSector=cur; sndTick(); }
+    if(p<1) requestAnimationFrame(frame); else { S.angle=((start+delta)%TAU+TAU)%TAU; drawWheel(); done(); }
+  })(t0);
+}
+
+/* ================= ИГРА ================= */
+function startGame(){
+  const names=[...document.querySelectorAll("#playersSetup input")].filter(x=>!x.disabled).map((x,i)=>x.value.trim()||("Игрок "+(i+1)));
+  S.players = names.map((n,i)=>({name:n, color:PLAYER_COLORS[i], total:0, roundPts:0, words:0, prizes:[], out:false}));
+  // очередь слов
+  let pool = S.theme==="*" ? CATEGORIES.flatMap(c=>c.items) : CATEGORIES.find(c=>c.name===S.theme).items;
+  S.queue = shuffle(pool).slice(0, S.rounds===999?pool.length:S.rounds);
+  S.round=0;
+  $("setupScreen").style.display="none";
+  $("gameScreen").style.display="block";
+  renderPlayers();
+  nextWord();
+}
+function nextWord(){
+  if(S.round>=S.queue.length){ endGame(); return; }
+  S.cur=S.queue[S.round++];
+  S.opened=new Set(); S.usedLetters=new Set();
+  S.players.forEach(p=>{p.roundPts=0; p.out=false;});
+  S.phase="idle"; S.turn=0;
+  // первый живой игрок
+  $("qTheme").textContent = "Тема: " + S.cur.t;
+  $("qRu").textContent = S.cur.qRu;
+  $("qEn").textContent = S.cur.qEn;
+  buildBoard(); buildAbc(); renderPlayers(); updateStatus();
+  $("sectorInfo").textContent="Крутите барабан!";
+  $("spinBtn").disabled=false;
+  log(`Раунд ${S.round} из ${S.queue.length}. Слово из ${S.cur.w.replace(" ","").length} букв.`);
+}
+function buildBoard(){
+  const b=$("board"); b.innerHTML="";
+  [...S.cur.w].forEach((ch,i)=>{
+    if(ch===" "){ const sp=document.createElement("div"); sp.style.width="18px"; sp.style.background="none"; sp.style.border="none"; sp.style.boxShadow="none"; b.appendChild(sp); return; }
+    const c=document.createElement("div"); c.className="cell"; c.dataset.ch=ch; c.dataset.i=i; b.appendChild(c);
+  });
+}
+function buildAbc(){
+  const a=$("abc"); a.innerHTML="";
+  "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("").forEach(L=>{
+    const k=document.createElement("button"); k.className="key"; k.textContent=L;
+    k.onclick=()=>pickLetter(L);
+    a.appendChild(k);
+  });
+}
+function renderPlayers(){
+  const bar=$("playersBar"); bar.innerHTML="";
+  S.players.forEach((p,i)=>{
+    const d=document.createElement("div");
+    d.className="pcard"+(i===S.turn&&!p.out?" turn":"")+(p.out?" out":"");
+    d.innerHTML=`<div class="pdot" style="background:${p.color}">${i+1}</div>
+      <div class="pname">${esc(p.name)}<div class="pround">раунд: ${p.roundPts} · слов: ${p.words}</div>
+      ${p.prizes.length?`<div class="prizeList">🎁 ${p.prizes.map(esc).join(" · ")}</div>`:""}</div>
+      <div class="pscore">${p.total}</div>`;
+    bar.appendChild(d);
+  });
+}
+function updateStatus(){
+  const p=S.players[S.turn];
+  $("turnBanner").innerHTML = `Ход: <b>${esc(p.name)}</b>`;
+}
+function log(msg){ $("logMsg").textContent=msg; }
+function esc(s){ return String(s).replace(/[&<>"]/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c])); }
+
+function alivePlayers(){ return S.players.filter(p=>!p.out); }
+function nextTurn(){
+  if(alivePlayers().length<1){ /* все забрали призы — слово никому */ finishRound(null); return; }
+  let i=S.turn;
+  for(let k=0;k<S.players.length;k++){
+    i=(i+1)%S.players.length;
+    if(!S.players[i].out){ S.turn=i; break; }
+  }
+  renderPlayers(); updateStatus();
+  S.phase="idle"; $("spinBtn").disabled=false; $("sectorInfo").textContent="Крутите барабан!";
+}
+
+/* ---------- крутим ---------- */
+$("spinBtn").onclick=()=>{
+  if(S.phase!=="idle"||S.spinning) return;
+  S.spinning=true; S.phase="spinning"; $("spinBtn").disabled=true;
+  $("sectorInfo").textContent="Барабан крутится…";
+  const idx=Math.floor(Math.random()*SECTORS.length);
+  spinTo(idx, ()=>{ S.spinning=false; applySector(SECTORS[idx]); });
+};
+function applySector(sec){
+  const p=S.players[S.turn];
+  $("sectorInfo").textContent = "Сектор: " + sec.label + "!";
+  if(sec.type==="pts") S.lastPts=sec.v;
+  switch(sec.type){
+    case "pts":
+      S.phase="letter";
+      log(`${p.name}: сектор ${sec.v}. Выберите букву!`);
+      break;
+    case "bank":
+      sndBank();
+      p.roundPts=0; renderPlayers();
+      log(`💀 БАНКРОТ! ${p.name} теряет очки раунда. Ход переходит.`);
+      setTimeout(nextTurn, 1300);
+      break;
+    case "zero":
+      sndMiss();
+      log(`Сектор 0 — ход переходит.`);
+      setTimeout(nextTurn, 1000);
+      break;
+    case "x2":
+      p.roundPts*=2; renderPlayers(); sndOpen();
+      log(`×2! Очки раунда ${p.name}: ${p.roundPts}. Крутите ещё!`);
+      S.phase="idle"; $("spinBtn").disabled=false;
+      break;
+    case "plus":
+      S.phase="plus";
+      log(`ПЛЮС! ${p.name} открывает любую букву бесплатно.`);
+      break;
+    case "prize": {
+      const pr=PRIZES[Math.floor(Math.random()*PRIZES.length)];
+      $("prizeEmoji").textContent=pr[0]; $("prizeText").textContent=pr[1];
+      $("ovPrize").classList.add("show");
+      $("prizeTake").onclick=()=>{ $("ovPrize").classList.remove("show");
+        p.prizes.push(pr[1]+" "+pr[0]); p.out=true; renderPlayers(); sndOpen();
+        log(`🎁 ${p.name} забирает приз и покидает раунд: ${pr[1]}!`);
+        setTimeout(nextTurn, 900); };
+      $("prizeContinue").onclick=()=>{ $("ovPrize").classList.remove("show");
+        log(`${p.name} отказывается от приза и крутит дальше!`);
+        S.phase="idle"; $("spinBtn").disabled=false; };
+      break; }
+  }
+}
+
+/* ---------- буквы ---------- */
+function pickLetter(L){
+  if(S.phase!=="letter" && S.phase!=="plus") return;
+  if(S.usedLetters.has(L)) return;
+  S.usedLetters.add(L);
+  const keyEl=[...document.querySelectorAll("#abc .key")].find(k=>k.textContent===L);
+  const p=S.players[S.turn];
+  const wordLetters=[...S.cur.w].filter(c=>c!==" ");
+  const count=wordLetters.filter(c=>c===L).length;
+
+  if(count>0){
+    keyEl.classList.add("hit");
+    sndOpen();
+    // открыть ячейки
+    [...document.querySelectorAll("#board .cell")].forEach(c=>{
+      if(c.dataset.ch===L){ c.classList.add("open"); c.textContent=L; }
+    });
+    if(S.phase==="letter"){
+      const pts=(S.lastPts||0)*count;
+      p.roundPts+=pts; renderPlayers();
+      log(`Буква «${L}» ×${count} = +${pts} очков! У ${p.name} в раунде ${p.roundPts}.`);
+    } else {
+      log(`ПЛЮС: буква «${L}» открыта бесплатно.`);
+    }
+    S.phase="idle"; $("spinBtn").disabled=false;
+    if(wordLetters.every(c=>S.usedLetters.has(c))) finishRound(p, "letters");
+  } else {
+    keyEl.classList.add("miss");
+    sndMiss();
+    log(`Буквы «${L}» нет в слове. Ход переходит.`);
+    S.phase="wait"; setTimeout(nextTurn, 1000);
+  }
+}
+
+/* ---------- назвать слово ---------- */
+$("btnSayWord").onclick=()=>{
+  if(S.phase!=="idle"&&S.phase!=="letter") return;
+  $("sayWho").textContent=`${S.players[S.turn].name}, введите слово целиком:`;
+  $("sayInput").value=""; $("ovWord").classList.add("show"); $("sayInput").focus();
+};
+$("sayCancel").onclick=()=>$("ovWord").classList.remove("show");
+$("sayOk").onclick=()=>{
+  $("ovWord").classList.remove("show");
+  const p=S.players[S.turn];
+  if(norm($("sayInput").value)===norm(S.cur.w)){
+    revealAll(); finishRound(p,"said");
+  } else {
+    sndMiss(); log(`❌ ${p.name} назвал слово неверно. Ход переходит.`);
+    S.phase="wait"; setTimeout(nextTurn, 1000);
+  }
+};
+$("sayInput").addEventListener("keydown",e=>{ if(e.key==="Enter") $("sayOk").click(); });
+
+function revealAll(){
+  [...document.querySelectorAll("#board .cell")].forEach(c=>{ c.classList.add("open"); c.textContent=c.dataset.ch; });
+  [...S.cur.w].filter(c=>c!==" ").forEach(c=>S.usedLetters.add(c));
+  buildAbcState();
+}
+function buildAbcState(){
+  document.querySelectorAll("#abc .key").forEach(k=>{
+    const L=k.textContent;
+    k.classList.toggle("used", S.usedLetters.has(L));
+  });
+}
+
+/* ---------- конец раунда ---------- */
+$("btnSkip").onclick=()=>{ if(S.phase==="idle"||S.phase==="letter"){ log("Слово пропущено."); revealAll(); finishRound(null,"skip"); } };
+function finishRound(winner, how){
+  S.phase="roundEnd"; $("spinBtn").disabled=true;
+  if(winner){
+    winner.total+=winner.roundPts; winner.words++;
+    sndFanf(); confetti();
+    $("roundTitle").textContent = how==="said" ? "Верно названо слово!" : "Слово угадано!";
+    $("roundWord").textContent = S.cur.w;
+    $("roundInfo").innerHTML = `${esc(winner.name)} получает <b style="color:#f5c542">${winner.roundPts}</b> очков за раунд!<br>
+      <span style="color:#aab6f2">${esc(S.cur.w)} — ${esc(S.cur.ru)}</span>`;
+  } else {
+    sndWin();
+    $("roundTitle").textContent = "Слово не угадано";
+    $("roundWord").textContent = S.cur.w;
+    $("roundInfo").innerHTML = `<span style="color:#aab6f2">${esc(S.cur.w)} — ${esc(S.cur.ru)}</span>`;
+  }
+  renderPlayers();
+  $("ovRound").classList.add("show");
+}
+$("roundNext").onclick=()=>{ $("ovRound").classList.remove("show"); nextWord(); };
+
+/* ---------- финал ---------- */
+function endGame(){
+  S.phase="over";
+  const sorted=[...S.players].sort((a,b)=>b.total-a.total||b.words-a.words);
+  const top=sorted[0];
+  $("finalTitle").textContent = (S.players.length>1 && top.total>0) ? `Победитель: ${top.name}! 🏆` : "Игра окончена!";
+  let rows=`<tr><th>Место</th><th>Игрок</th><th>Очки</th><th>Слов</th><th>Призы</th></tr>`;
+  sorted.forEach((p,i)=>{
+    rows+=`<tr class="${i===0&&p.total>0?"w":""}"><td>${i+1}</td><td style="text-align:left">${esc(p.name)}</td>
+      <td>${p.total}</td><td>${p.words}</td><td style="font-size:12px">${p.prizes.map(esc).join("<br>")||"—"}</td></tr>`;
+  });
+  $("finalTable").innerHTML=rows;
+  $("ovFinal").classList.add("show");
+  sndFanf(); confetti(120);
+}
+$("finalAgain").onclick=()=>{ $("ovFinal").classList.remove("show"); $("gameScreen").style.display="none"; $("setupScreen").style.display="block"; };
+
+function confetti(n=60){
+  const em=["🎉","⭐","✨","🎊","🥇","💛"];
+  for(let i=0;i<n;i++){
+    const d=document.createElement("div"); d.className="confetti";
+    d.textContent=em[Math.floor(Math.random()*em.length)];
+    d.style.left=Math.random()*100+"vw";
+    d.style.animationDuration=(2.4+Math.random()*2.5)+"s";
+    d.style.animationDelay=(Math.random()*0.8)+"s";
+    document.body.appendChild(d);
+    setTimeout(()=>d.remove(),6000);
+  }
+}
+
+/* init */
+buildSetup();
+drawWheel();
+(function blink(){ lampPhase=(lampPhase+1)%4; if(!S.spinning) drawWheel(); setTimeout(blink, 450); })();
+</script>
+</body>
+</html>
